@@ -89,13 +89,14 @@ input[type="radio"]{
     height: 20%;
     left:25%;
     top:80%;
-    background: yellow;
+    background: #c1c1c1;
 }
 #number{
-    height: 5%;
+    height: 36.64px;
     margin:0;
-    background: red;
+    background: #bbadad;
     text-align: center;
+    line-height: 36.64px;
 }
 .user_list{
     height:95%;

@@ -5,7 +5,7 @@ $(document).ready(function(){
 
     };
     if(getCookie('nickname')){
-    	user.nickname = getCookie('nickname');
+        user.nickname = getCookie('nickname');
     }
     var wsServer = 'ws://123.206.28.242:2345';
     //调用websocket对象建立连接：
@@ -20,17 +20,48 @@ $(document).ready(function(){
     CLOSING    2    The connection is in the process of closing.
     CLOSED    3    The connection is closed or couldn't be opened.
     */
-    //msg.innerHTML = websocket.readyState;
         if(websocket.readyState == 1){
-            $('*').attr('disabled',false);
+            //$('*').attr('disabled',false);
             if(!user.nickname){
                 $(".chat").css('display','none');
+                layer.prompt({
+                    title : '请输入昵称',
+                    btn:['确定'],
+                    cancel: function(index){
+                        layer.msg('请输入昵称然后点击确定');
+                        return false;
+                    }
+                },function(nickname,index,elem){
+                    // if(!nickname){
+                    //     layer.close(index);
+                    //     layer.msg('昵称不能为空');
+                    //     return;
+                    // }
+                    for(var i=0;i<users.length;i++){
+                        if(users[i] == nickname){
+                            layer.msg('该昵称已经存在,请重新输入');
+                            return;
+                        }
+
+                    }
+                    layer.close(index);
+                    user.nickname = nickname;
+                    setCookie('nickname',nickname);
+                    message.type = 'users';
+                    message.data = nickname;
+                    websocket.send(JSON.stringify(message));
+                    //console.log(JSON.stringify(message));
+                    $('.nickname').css('display','none');
+                    $('.chat').css('display','');
+                    $('input:radio[name="user"]:checked').click();
+                })
+                
             }else{
                 $(".nickname").css('display','none');
                 //刷新页面时(存在cookie)
                 message.type = 'users';
-            	message.data = user.nickname;
-            	websocket.send(JSON.stringify(message));
+                message.data = user.nickname;
+                websocket.send(JSON.stringify(message));
 
                 message.type = 'record';
                 message.data = 0;
@@ -47,7 +78,7 @@ $(document).ready(function(){
       //监听连接关闭
     websocket.onclose = function (evt) {
        $('.chat').hide();
-        alert('您已掉线,请刷新页面！');
+        layer.alert('您已掉线,请刷新页面！');
    };
 
     //onmessage 监听服务器数据推送
@@ -70,8 +101,8 @@ $(document).ready(function(){
                 $('.user_list').html('');
                 $('.user_list').append('<div><label><input type="radio" class="abc" name="user" value="ALL" checked="checked"/>ALL</label></div>');
                 for(var i=0;i<onlineuser.length;i++){
-                	if(onlineuser[i] != user.nickname)
-                		$('.user_list').append('<div><label><input type="radio" class="abc" name="user" value="'+onlineuser[i]+'"/>'+onlineuser[i]+'</label></div>');
+                    if(onlineuser[i] != user.nickname)
+                        $('.user_list').append('<div><label><input type="radio" class="abc" name="user" value="'+onlineuser[i]+'"/>'+onlineuser[i]+'</label></div>');
                 }
                 setTimeout(() => {
                     //单选框(用户)点击事件 获取聊天记录
@@ -87,22 +118,22 @@ $(document).ready(function(){
                 }, 0);
                 break;
             case 'image':
-            	if(data.from == checkeduser&&data.to==user.nickname){
-                	$('.msg').append('<div class="txt from">'+data.from+'<img class="img " src="'+data.data+'" alt=""/></div>');
-            	}
-            	if(checkeduser == "ALL"&&data.to == "ALL"){
-            		$('.msg').append('<div class="from txt">'+data.from+'<img class="img " src="'+data.data+'" alt=""/></div>');
-            	}
-            	$('.msg').scrollTop( $('.msg')[0].scrollHeight );
+                if(data.from == checkeduser&&data.to==user.nickname){
+                    $('.msg').append('<div class="txt from">'+data.from+'<img class="img " src="'+data.data+'" alt=""/></div>');
+                }
+                if(checkeduser == "ALL"&&data.to == "ALL"){
+                    $('.msg').append('<div class="from txt">'+data.from+'<img class="img " src="'+data.data+'" alt=""/></div>');
+                }
+                $('.msg').scrollTop( $('.msg')[0].scrollHeight );
                 break;
             case 'text':
-            	if(data.from === checkeduser&&data.to==user.nickname){
-                	$('.msg').append('<div class="from txt">'+data.from+': '+data.data+'</div>');
-            	}
-            	if(checkeduser == "ALL"&&data.to=="ALL"){
-            		$('.msg').append('<div class="from txt">'+data.from+': '+data.data+'</div>');
-            	}
-            	$('.msg').scrollTop( $('.msg')[0].scrollHeight );
+                if(data.from === checkeduser&&data.to==user.nickname){
+                    $('.msg').append('<div class="from txt">'+data.from+': '+data.data+'</div>');
+                }
+                if(checkeduser == "ALL"&&data.to=="ALL"){
+                    $('.msg').append('<div class="from txt">'+data.from+': '+data.data+'</div>');
+                }
+                $('.msg').scrollTop( $('.msg')[0].scrollHeight );
                 break;
             case 'record':
                 var arr = data.data.substr(1,data.data.length-2).split(/,(?=\"\{)/);
@@ -133,7 +164,7 @@ $(document).ready(function(){
             case 'tag':
                 if(data.data != 'OK'){
                     $('p.to:last').remove();
-                    alert('上一条信息发送失败');
+                    layer.msg('上一条信息发送失败');
                 }
                 break;
         }
@@ -173,41 +204,42 @@ $(document).ready(function(){
     $(".send_button").click(function(){
 
         if($('#text').val() && !$('#img').val()){
-        	message.data = $('#text').val();
+            message.data = $('#text').val();
             message.type = 'text';               
             message.from = user.nickname;
-        	message.to = $('input:radio[name="user"]:checked').val();
-        	message.time = (new Date()).getTime();
+            message.to = $('input:radio[name="user"]:checked').val();
+            message.time = (new Date()).getTime();
         //向服务器发送数据
-        	websocket.send(JSON.stringify(message));
+            websocket.send(JSON.stringify(message));
             $('.msg').append('<div class="to txt">'+$('#text').val()+'</div>');
             $('#text').val('');
 
         }
         else if(!$('#text').val() && $('#img').val()){
-        	var file = $('#img')[0].files[0];
-        	if(!/image\/\w+/.test(file.type)){
-            	alert('图片?ok?');
-            	return;
-        	}
-	        var reader = new FileReader();
-	        reader.readAsDataURL(file);
-	        reader.onload = function(e){	            
-	            message.data = this.result;
-	            message.type = 'image';
-	            message.from = user.nickname;
-        		message.to = $('input:radio[name="user"]:checked').val();
-        		message.time = (new Date()).getTime();
-		        //向服务器发送数据
-		        websocket.send(JSON.stringify(message));
-		        $('.msg').append('<div class="txt to"><img  class="img" src="'+this.result+'" alt=""/></div>');
-	            $('#img').val('');
-	            $(".img_preview").empty();
-	        };
-	    } else{
-	    	alert('只支持一次发送消息或者图片！');
-	    	return;
-	    }
+            var file = $('#img')[0].files[0];
+            if(!/image\/\w+/.test(file.type)){
+                layer.msg('图片?ok?');
+                return;
+            }
+            var reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function(e){                
+                message.data = this.result;
+                message.type = 'image';
+                message.from = user.nickname;
+                message.to = $('input:radio[name="user"]:checked').val();
+                message.time = (new Date()).getTime();
+                //向服务器发送数据
+                websocket.send(JSON.stringify(message));
+                $('.msg').append('<div class="txt to"><img  class="img" src="'+this.result+'" alt=""/></div>');
+                $('#img').val('');
+                $(".img_preview").empty();
+            };
+        } else{
+            layer.msg('只支持一次发送消息或者图片！');
+            $('#text').val('');
+            return;
+        }
         $('.msg').scrollTop( $('.msg')[0].scrollHeight );
     });
     $("#img_button").click(function(){
@@ -216,9 +248,9 @@ $(document).ready(function(){
     //回车事件
 
     $(document).keyup(function(e){
-    	if(e.which == 13){
-    		$('.send_button').click();
-    	}
+        if(e.which == 13){
+            $('.send_button').click();
+        }
     })
     $("#img").on("change",function(){
        var objUrl = getObjectURL(this.files[0]) ;  //获取图片的路径，该路径不是图片在本地的路径
@@ -228,16 +260,16 @@ $(document).ready(function(){
     });
  
     //建立一個可存取到該file的url
-	function getObjectURL(file) {
-		  var url = null ;
-		  if (window.createObjectURL!==undefined) { // basic
-		    url = window.createObjectURL(file) ;
-		  } else if (window.URL!==undefined) { // mozilla(firefox)
-		    url = window.URL.createObjectURL(file) ;
-		  } else if (window.webkitURL!==undefined) { // webkit or chrome
-		    url = window.webkitURL.createObjectURL(file) ;
-		  }
-		  return url ;
-		}
+    function getObjectURL(file) {
+          var url = null ;
+          if (window.createObjectURL!==undefined) { // basic
+            url = window.createObjectURL(file) ;
+          } else if (window.URL!==undefined) { // mozilla(firefox)
+            url = window.URL.createObjectURL(file) ;
+          } else if (window.webkitURL!==undefined) { // webkit or chrome
+            url = window.webkitURL.createObjectURL(file) ;
+          }
+          return url ;
+        }
 
 });
